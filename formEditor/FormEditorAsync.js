@@ -1,11 +1,12 @@
 /*eslint-disable*/
 angular.module("formEditor", [])
-  .controller("FormController", ["$scope", "$filter", "$http", "$window", "$timeout", function ($scope, $filter, $http, $window, $timeout) {
+  .controller("FormController", ["$scope", "$filter", "$http", "$window", "$timeout", "$q", function ($scope, $filter, $http, $window, $timeout, $q) {
     $scope.formData = {};
     $scope.fileData = {};
 
     $scope.formState = {};
     $scope.invalidValidations = [];
+    $scope.invalidFields = [];
 
     $scope.submitStatus = "none";
     $scope.showReceipt = false;
@@ -30,6 +31,14 @@ angular.module("formEditor", [])
           $scope.formDataChanged();
         }, true);
       }
+
+      // create a global scope access to form validation and submission
+      $window.feGlobal = $window.feGlobal || [];
+      $window.feGlobal[formId] = {
+        submit: $scope.globalSubmitForm,
+        validate: $scope.globalValidateForm,
+        setValue: $scope.globalSetFieldValue
+      };
     }
 
     $scope.toggleMultiSelectValue = function (fieldName, pageNumber, value, required) {
@@ -54,19 +63,67 @@ angular.module("formEditor", [])
       return values.indexOf(value) >= 0;
     };
 
-    $scope.submit = function () {
+    // this exposes the form validation to a global scope
+    $scope.globalValidateForm = function () {
+      var deferred = $q.defer();
+      $timeout(
+        function () {
+          var valid = $scope.validateOnSubmit();
+          deferred.resolve(valid);
+        },
+        50
+      );
+      return deferred.promise;
+    }
+
+    // this exposes the form submission to a global scope
+    $scope.globalSubmitForm = function () {
+      var deferred = $q.defer();
+      $timeout(
+        function () {
+          deferred.resolve($scope.submit());
+        },
+        50
+      );
+      return deferred.promise;
+    }
+
+    // this exposes a way of setting a field value from the global scope
+    $scope.globalSetFieldValue = function(fieldName, value) {
+      $timeout(
+        function () {
+          $scope.formData[fieldName] = value;
+        },
+        50
+      );
+    }
+
+    $scope.validateOnSubmit = function () {
+      $scope.invalidFields = [];
       for (var i = 0; i < $scope.formState.totalPages; i++) {
         $scope.getFormPage(i).showValidationErrors = true;
       }
 
       if ($scope.form.$invalid) {
-        return;
+        return false;
       }
 
       $scope.invalidValidations = $filter("filter")($scope.formState.validations, function (validation, index, array) {
         return $scope.validate(validation) == false;
       });
       if ($scope.invalidValidations.length > 0) {
+        return false;
+      }
+
+      return true;
+    }
+
+    $scope.submit = function () {
+      var deferred = $q.defer();
+
+      var valid = $scope.validateOnSubmit();
+      if (valid == false) {
+        deferred.resolve(false, null);
         return;
       }
 
@@ -93,17 +150,16 @@ angular.module("formEditor", [])
       }
       // special case: add reCAPTCHA response if present
       // - fetch from document.form because it's not an angular model
-      if ($window.document.form["g-recaptcha-response"]) {
-        data.append("g-recaptcha-response", $window.document.form["g-recaptcha-response"].value);
+      var formElement = $window.document.getElementById("fe_" + $scope.formState.formId);
+      if (formElement && formElement["g-recaptcha-response"]) {
+        data.append("g-recaptcha-response", formElement["g-recaptcha-response"].value);
       }
 
       $scope.submitStatus = "submitting";
 
-      console.log($http);
-
       // post the form data to the public SubmitEntry endpoint
       $http
-        .post("/umbraco/FormEditorApi/Public/SubmitEntry/", data, { headers: { "Content-Type": undefined } })
+        .post("/umbraco/FormEditorApi/Public/SubmitEntry/", data, { headers: { "Content-Type": undefined, "AntiForgeryToken": $scope.formState.antiForgeryToken } })
         .then(function successCallback(response) {
           $scope.submitStatus = "success";
           if (response.data && response.data.redirectUrl) {
@@ -111,23 +167,32 @@ angular.module("formEditor", [])
           }
           $scope.showReceipt = $scope.formState.hasReceipt;
           // add your own success handling here
+          deferred.resolve(true, response.data);
         }, function errorCallback(response) {
-          console.log('err');
           $scope.submitStatus = "failure";
           if (response.data) {
             if (response.data.invalidFields && response.data.invalidFields.length > 0) {
               angular.forEach(response.data.invalidFields, function (f) {
                 for (var i = 0; i < $scope.formState.totalPages; i++) {
-                  $scope.getFormPage(i)[f.formSafeName].$setValidity("required", false);
+                  var field = $scope.getFormPage(i)[f.formSafeName];
+                  if (field != null) {
+                    field.$setValidity("required", false);
+                  }
                 }
               });
+            }
+            if (response.data.invalidFields && response.data.invalidFields.length > 0) {
+              $scope.invalidFields = response.data.invalidFields;
             }
             if (response.data.failedValidations && response.data.failedValidations.length > 0) {
               $scope.invalidValidations = response.data.failedValidations;
             }
           }
           // add your own error handling here
+          deferred.resolve(false, response.data);
         });
+
+      return deferred.promise;
     };
 
     // validate a validation (usually cross field validation)
@@ -192,9 +257,9 @@ angular.module("formEditor", [])
       var formPage = $scope.getFormPage(pageNumber);
       var field = formPage[fieldName];
       if (field == null) {
-        console.warn("could not find field", fieldName);
+        return formPage.showValidationErrors && $scope.invalidFields.length && $filter('filter')($scope.invalidFields, { formSafeName: fieldName }).length;
       }
-      if (field == null || field.$invalid == false) {
+      if (field.$invalid == false) {
         return false;
       }
       return formPage.$invalid && formPage.showValidationErrors;
