@@ -3,7 +3,7 @@
 
 For when you _need_ to use the Umbraco module FormEditor inside a Vue.js app.
 
-**And yes**, we know it's far from best practice to bootstrap AngularJS inside Vue, but FormEditor depends upon AngularJS for async posting so here we are. This module tries to go about this in the least ridicolous way by async loading AngularJS and FormEditor in its own script chunk.
+**And yes**, we know it's far from best practice to bootstrap AngularJS inside Vue, but FormEditor depends upon AngularJS for async posting so here we are. This module tries to go about this in the least ridiculous way by async loading AngularJS and FormEditor in its own script chunk.
 
 Slim Flatpickr AngularJS directive included as well.
 
