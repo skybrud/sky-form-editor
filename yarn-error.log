@@ -1,0 +1,64 @@
+Arguments: 
+  /usr/local/bin/node /usr/local/bin/yarn dist
+
+PATH: 
+  /usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+
+Yarn version: 
+  1.4.0
+
+Node version: 
+  8.10.0
+
+Platform: 
+  darwin x64
+
+npm manifest: 
+  {
+  	"name": "sky-form-editor",
+  	"version": "0.0.0",
+  	"description": "Vue component for integrating formEditor in VueJs",
+  	"main": "./dist/sky-form-editor.ssr.js",
+  	"module": "./dist/sky-form-editor.esm.js",
+  	"browser": "./dist/sky-form-editor.esm.js",
+  	"scripts": {
+  		"dist": "yarn rimraf dist && yarn run build",
+  		"build": "yarn rollup --config rollup.config.js --environment BUILD:production"
+  	},
+  	"author": "Skybrud.dk",
+  	"license": "MIT",
+  	"repository": {
+  		"type": "git",
+  		"url": "https://github.com/skybrud/sky-form-editor.git"
+  	},
+  	"dependencies": {
+  	},
+  	"devDependencies": {
+  		"sky-build-setup": "https://github.com/skybrud/sky-build-setup.git"
+  	},
+  	"peerDependencies": {
+  		"vue": "^2.5.0"
+  	}
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
+
+Trace: 
+  Error: Command failed.
+  Exit code: 1
+  Command: sh
+  Arguments: -c yarn rimraf dist && yarn run build
+  Directory: /Users/rudiornhoj/Sites/roernhoej/skybrud/sky-form-editor
+  Output:
+  
+      at ProcessTermError.MessageError (/usr/local/lib/node_modules/yarn/lib/cli.js:186:110)
+      at new ProcessTermError (/usr/local/lib/node_modules/yarn/lib/cli.js:226:113)
+      at ChildProcess.<anonymous> (/usr/local/lib/node_modules/yarn/lib/cli.js:30822:17)
+      at emitTwo (events.js:126:13)
+      at ChildProcess.emit (events.js:214:7)
+      at maybeClose (internal/child_process.js:925:16)
+      at Process.ChildProcess._handle.onexit (internal/child_process.js:209:5)

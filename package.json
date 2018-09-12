@@ -1,0 +1,26 @@
+{
+	"name": "sky-form-editor",
+	"version": "0.0.0",
+	"description": "Vue component for integrating formEditor in VueJs",
+	"main": "./dist/sky-form-editor.ssr.js",
+	"module": "./dist/sky-form-editor.esm.js",
+	"browser": "./dist/sky-form-editor.esm.js",
+	"scripts": {
+		"dist": "yarn rimraf dist && yarn run build",
+		"build": "yarn rollup --config rollup.config.js --environment BUILD:production"
+	},
+	"author": "Skybrud.dk",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/skybrud/sky-form-editor.git"
+	},
+	"dependencies": {
+	},
+	"devDependencies": {
+		"sky-build-setup": "https://github.com/skybrud/sky-build-setup.git"
+	},
+	"peerDependencies": {
+		"vue": "^2.5.0"
+	}
+}
