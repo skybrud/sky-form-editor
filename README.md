@@ -7,12 +7,23 @@ For when you _need_ to use the Umbraco module FormEditor inside a Vue.js app.
 
 Slim Flatpickr AngularJS directive included as well.
 
-Please refer to the code-files for a bit more documentation.
+## Installation
+```bash
+npm install sky-form-editor
+```
+or
+```bash
+yarn add sky-form-editor
+```
 
-## Dependencies
-- [AngularJS](https://github.com/angular/angular.js)
-- [FormEditor](https://github.com/kjac/FormEditor)
-- [Flatpickr](https://github.com/chmln/flatpickr)
+## Usage
+Begin by importing and installing the SkyMailchimp Vue plugin
+```js
+import Vue from 'vue';
+import SkyFormEditor from 'sky-form-editor';
+
+Vue.use(SkyFormEditor);
+
 
 # Credits
 
