@@ -14,6 +14,13 @@
 export default {
 	name: 'SkyFormEditor',
 	props: ['markup'],
+	data() {
+		return {
+			scriptsArray: [],
+			angular: null,
+			bootElement: null,
+		};
+	},
 	computed: {
 		formScripts() {
 			// Extract all scripts from the markup input
@@ -29,40 +36,55 @@ export default {
 			return scripts;
 		},
 		contentHtml() {
-			// Only use the non script part.
-			return this.markup.split('<script')[0];
+			// Only use the non script part and remove ng-app attr
+			// to avoid auto bootstrapping
+			return this.markup.split('<script')[0].replace('ng-app="formEditor"', '');
 		},
 	},
 	mounted() {
 		/**
-			 * Webpack code split
-			 * Ensure that angular + formEditor js has own webpack bundle that
-			 * will be loaded async on component created life cycle hook
-			*/
+		 * Webpack code split
+		 * Ensure that angular + formEditor js has own webpack bundle that
+		 * will be loaded async on component created life cycle hook
+		*/
 		require
-			.ensure(['angular', 'flatpickr', 'flatpickr/dist/l10n/da.js'], (require) => {
+			.ensure(['flatpickr', 'flatpickr/dist/l10n/da.js'], (require) => {
 				const { da } = require('flatpickr/dist/l10n/da.js').default;
 
 				window.Flatpickr = require('flatpickr');
 				window.Flatpickr.localize(da); // default locale is now danish
 
-				require('angular');
-				require('../src/formEditor/FormEditorAsync.js');
-				require('../src/flatpickr/flatpickr.directive.js');
+				this.$set(this, 'angular', require('angular'));
+
+				require('./formEditor/FormEditorAsync.js');
+				require('./flatpickr/flatpickr.directive.js');
 			}, 'formEditor')
+			// scripts must be inserted before form html, since the html uses a function from scripts on mount.
+			.then(this.insertScripts)
 			.then(() => {
-				// scripts must be inserted before form html, since the html uses a function from scripts on mount.
-				this.insertScripts();
-			})
-			.then(() => {
+				// Insert form markup and bootstrap angular
 				this.$el.innerHTML = this.contentHtml;
+
+				this.bootElement = this.$refs.wrap.children[0];
+				this.angular.bootstrap(this.bootElement, ['formEditor']);
 			});
+	},
+	beforeDestroy() {
+		// Remove added scripts, hence avoiding clutting the body with exessive  scripts
+		const fp = [...document.querySelectorAll('.flatpickr-calendar.animate')];
+		this.scriptsArray = [...this.scriptsArray, ...fp];
+
+		this.scriptsArray.forEach((element) => {
+			element.parentNode.removeChild(element);
+		});
 	},
 	methods: {
 		insertScripts() {
-			this.formScripts.forEach((script) => {
+			this.formScripts.forEach((script, index) => {
 				const scriptElement = document.createElement('script');
-				scriptElement.setAttribute('id', `formEditorScript-${Math.random().toString(35).substr(2, 5)}`);
+				this.scriptsArray.push(scriptElement);
+
+				scriptElement.setAttribute('id', `formEditorScript-${index + 1}`);
 				scriptElement.innerHTML = script;
 
 				// script must be appended outside the vue instance - if not it will be stripped from DOM by vue
